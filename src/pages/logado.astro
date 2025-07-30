@@ -1,0 +1,663 @@
+---
+import Layout from '../layouts/Layout.astro';
+import {Button} from '../components/Button'
+import {PieChart as PieChartComponent} from '../components/PieChart'
+import { Teste } from '../components/Teste';
+---
+
+<Layout>
+	<div class="dashboard-container">
+		<!-- Header com Saldo -->
+		<header class="balance-header">
+			<div class="balance-card">
+				<h2>Saldo Atual</h2>
+				<div class="balance-amount" id="balanceAmount">R$ 2.450,00</div>
+				<div class="balance-info">
+					<span class="income">+ R$ 3.200,00</span>
+					<span class="expense">- R$ 750,00</span>
+				</div>
+			</div>
+		</header>
+
+		<!-- Conteúdo Principal -->
+		<main class="main-content">
+			<!-- Formulário de Despesa -->
+			<section class="expense-form-section">
+				<div class="form-card">
+					<h3>Nova Transação</h3>
+					<form id="expenseForm" class="expense-form">
+						<div class="form-group">
+							<label for="description">Descrição</label>
+							<input 
+								type="text" 
+								id="description" 
+								name="description" 
+								placeholder="Ex: Supermercado, Conta de luz..."
+								required
+							/>
+						</div>
+						
+						<div class="form-group">
+							<label for="type">Tipo</label>
+							<select id="type" name="type" required>
+								<option value="">Selecione o tipo</option>
+								<option value="debit">Débito</option>
+								<option value="credit">Crédito</option>
+							</select>
+						</div>
+						
+						<div class="form-group">
+							<label for="amount">Valor</label>
+							<input 
+								type="number" 
+								id="amount" 
+								name="amount" 
+								placeholder="0,00"
+								step="0.01"
+								min="0"
+								required
+							/>
+						</div>
+						
+						<button type="submit" class="submit-button">
+							Adicionar Transação
+						</button>
+					</form>
+				</div>
+			</section>
+
+			<!-- Extrato Bancário -->
+			<section class="statement-section">
+				<div class="statement-card">
+					<h3>Extrato de Transações</h3>
+					<div class="statement-list" id="statementList">
+						<!-- Transações serão inseridas aqui via JavaScript -->
+					</div>
+				</div>
+			</section>
+		</main>
+
+		<!-- Gráfico de Pizza -->
+		<section class="chart-section">
+			<div class="chart-card">
+				<h3>Análise de Gastos vs Receitas</h3>
+				<div id="pieChartContainer">
+					<PieChartComponent gastos={750} receitas={4000} client:only/>
+				</div>
+			</div>
+		</section>
+
+		<!-- Botão de Logout -->
+		<div class="logout-container">
+			<a href="/" class="logout-link">Fazer Logout</a>
+		</div>
+	</div>
+</Layout>
+
+<script>
+	// Dados iniciais simulados
+	let transactions = [
+		{
+			id: 1,
+			description: 'Salário',
+			type: 'credit',
+			amount: 3200.00,
+			date: '2024-01-15'
+		},
+		{
+			id: 2,
+			description: 'Supermercado',
+			type: 'debit',
+			amount: 450.00,
+			date: '2024-01-14'
+		},
+		{
+			id: 3,
+			description: 'Conta de Luz',
+			type: 'debit',
+			amount: 120.00,
+			date: '2024-01-13'
+		},
+		{
+			id: 4,
+			description: 'Freelance',
+			type: 'credit',
+			amount: 800.00,
+			date: '2024-01-12'
+		},
+		{
+			id: 5,
+			description: 'Restaurante',
+			type: 'debit',
+			amount: 180.00,
+			date: '2024-01-11'
+		}
+	];
+
+	let balance = 2450.00;
+
+	// Função para formatar moeda
+	function formatCurrency(value: number) {
+		return new Intl.NumberFormat('pt-BR', {
+			style: 'currency',
+			currency: 'BRL'
+		}).format(value);
+	}
+
+	// Função para formatar data
+	function formatDate(dateString: string) {
+		const date = new Date(dateString);
+		return date.toLocaleDateString('pt-BR');
+	}
+
+	// Função para calcular totais de despesas e receitas
+	function calculateTotals() {
+		let totalExpenses = 0;
+		let totalIncome = 0;
+
+		transactions.forEach(transaction => {
+			if (transaction.type === 'debit') {
+				totalExpenses += transaction.amount;
+			} else {
+				totalIncome += transaction.amount;
+			}
+		});
+
+		return { totalExpenses, totalIncome };
+	}
+
+	// Função para atualizar o gráfico de pizza
+	// function updatePieChart() {
+	// 	const { totalExpenses, totalIncome } = calculateTotals();
+	// 	const pieChartContainer = document.getElementById('pieChartContainer');
+	// 	return;
+	// 	if (pieChartContainer) {
+	// 		// Remover o componente anterior
+	// 		pieChartContainer.innerHTML = '';
+			
+	// 		// Criar um elemento div para o gráfico
+	// 		const chartDiv = document.createElement('div');
+	// 		chartDiv.className = 'pie-chart-wrapper';
+			
+	// 		// Adicionar informações resumidas do gráfico
+	// 		chartDiv.innerHTML = `
+	// 			<div class="chart-summary">
+	// 				<div class="chart-item">
+	// 					<span class="chart-label">Total Gastos:</span>
+	// 					<span class="chart-value expense">R$ ${totalExpenses.toLocaleString('pt-BR')}</span>
+	// 				</div>
+	// 				<div class="chart-item">
+	// 					<span class="chart-label">Total Receitas:</span>
+	// 					<span class="chart-value income">R$ ${totalIncome.toLocaleString('pt-BR')}</span>
+	// 				</div>
+	// 				<div class="chart-item">
+	// 					<span class="chart-label">Saldo:</span>
+	// 					<span class="chart-value ${totalIncome - totalExpenses >= 0 ? 'income' : 'expense'}">
+	// 						R$ ${(totalIncome - totalExpenses).toLocaleString('pt-BR')}
+	// 					</span>
+	// 				</div>
+	// 			</div>
+	// 		`;
+			
+	// 		pieChartContainer.appendChild(chartDiv);
+	// 	}
+	// }
+
+	// Função para renderizar transações
+	function renderTransactions() {
+		const statementList = document.getElementById('statementList');
+		if (!statementList) return;
+
+		statementList.innerHTML = '';
+
+		transactions.forEach(transaction => {
+			const transactionElement = document.createElement('div');
+			transactionElement.className = `transaction-item ${transaction.type}`;
+			
+			transactionElement.innerHTML = `
+				<div class="transaction-info">
+					<div class="transaction-description">${transaction.description}</div>
+					<div class="transaction-date">${formatDate(transaction.date)}</div>
+				</div>
+				<div class="transaction-amount ${transaction.type}">
+					${transaction.type === 'credit' ? '+' : '-'} ${formatCurrency(transaction.amount)}
+				</div>
+			`;
+
+			statementList.appendChild(transactionElement);
+		});
+	}
+
+	// Função para atualizar saldo
+	function updateBalance() {
+		const balanceElement = document.getElementById('balanceAmount');
+		if (balanceElement) {
+			balanceElement.textContent = formatCurrency(balance);
+		}
+	}
+
+	// Função para adicionar nova transação
+	function addTransaction(description: string, type: string, amount: string) {
+		const newTransaction = {
+			id: Date.now(),
+			description,
+			type,
+			amount: parseFloat(amount),
+			date: new Date().toISOString().split('T')[0]
+		};
+
+		transactions.unshift(newTransaction);
+
+		// Atualizar saldo
+		if (type === 'credit') {
+			balance += parseFloat(amount);
+		} else {
+			balance -= parseFloat(amount);
+		}
+
+		updateBalance();
+		renderTransactions();
+		// updatePieChart();
+	}
+
+	// Event listener para o formulário
+	const expenseForm = document.getElementById('expenseForm') as HTMLFormElement;
+	const descriptionInput = document.getElementById('description') as HTMLInputElement;
+	const typeInput = document.getElementById('type') as HTMLSelectElement;
+	const amountInput = document.getElementById('amount') as HTMLInputElement;
+	
+	if (expenseForm && descriptionInput && typeInput && amountInput) {
+		expenseForm.addEventListener('submit', function(e) {
+			e.preventDefault();
+			
+			const description = descriptionInput.value;
+			const type = typeInput.value;
+			const amount = amountInput.value;
+			
+			if (description && type && amount) {
+				addTransaction(description, type, amount);
+				expenseForm.reset();
+			}
+		});
+	}
+
+	// Inicializar a interface
+	document.addEventListener('DOMContentLoaded', function() {
+		updateBalance();
+		renderTransactions();
+		// updatePieChart();
+	});
+</script>
+
+<style>
+	.dashboard-container {
+		min-height: 100vh;
+		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+		padding: 2rem;
+		font-family: Inter, Roboto, 'Helvetica Neue', 'Arial Nova', 'Nimbus Sans', Arial, sans-serif;
+	}
+
+	/* Header com Saldo */
+	.balance-header {
+		margin-bottom: 2rem;
+	}
+
+	.balance-card {
+		background: rgba(255, 255, 255, 0.95);
+		padding: 2rem;
+		border-radius: 16px;
+		box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+		text-align: center;
+		backdrop-filter: blur(10px);
+		max-width: 400px;
+		margin: 0 auto;
+	}
+
+	.balance-card h2 {
+		color: #6b7280;
+		font-size: 1.1rem;
+		margin-bottom: 0.5rem;
+		font-weight: 500;
+	}
+
+	.balance-amount {
+		font-size: 2.5rem;
+		font-weight: 700;
+		color: #1f2937;
+		margin-bottom: 1rem;
+	}
+
+	.balance-info {
+		display: flex;
+		justify-content: space-around;
+		gap: 1rem;
+	}
+
+	.balance-info span {
+		font-size: 0.9rem;
+		font-weight: 500;
+		padding: 0.25rem 0.75rem;
+		border-radius: 20px;
+	}
+
+	.income {
+		background: rgba(34, 197, 94, 0.1);
+		color: #16a34a;
+	}
+
+	.expense {
+		background: rgba(239, 68, 68, 0.1);
+		color: #dc2626;
+	}
+
+	/* Conteúdo Principal */
+	.main-content {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 2rem;
+		max-width: 1200px;
+		margin: 0 auto;
+	}
+
+	/* Formulário de Despesa */
+	.form-card {
+		background: rgba(255, 255, 255, 0.95);
+		padding: 2rem;
+		border-radius: 16px;
+		box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+		backdrop-filter: blur(10px);
+		height: fit-content;
+	}
+
+	.form-card h3 {
+		color: #1f2937;
+		font-size: 1.5rem;
+		margin-bottom: 1.5rem;
+		font-weight: 600;
+	}
+
+	.expense-form {
+		display: flex;
+		flex-direction: column;
+		gap: 1.5rem;
+	}
+
+	.form-group {
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+	}
+
+	.form-group label {
+		font-size: 0.9rem;
+		font-weight: 500;
+		color: #374151;
+	}
+
+	.form-group input,
+	.form-group select {
+		padding: 12px 16px;
+		border: 1px solid #d1d5db;
+		border-radius: 8px;
+		font-size: 16px;
+		background: rgba(255, 255, 255, 0.9);
+		transition: border-color 0.2s, box-shadow 0.2s;
+	}
+
+	.form-group input:focus,
+	.form-group select:focus {
+		outline: none;
+		border-color: #3245ff;
+		box-shadow: 0 0 0 3px rgba(50, 69, 255, 0.1);
+	}
+
+	.form-group input::placeholder {
+		color: #9ca3af;
+	}
+
+	.submit-button {
+		color: white;
+		background: linear-gradient(83.21deg, #3245ff 0%, #bc52ee 100%);
+		box-shadow:
+			inset 0 0 0 1px rgba(255, 255, 255, 0.12),
+			inset 0 -2px 0 rgba(0, 0, 0, 0.24);
+		border-radius: 10px;
+		border: none;
+		padding: 14px 24px;
+		font-size: 16px;
+		font-weight: 500;
+		cursor: pointer;
+		transition: all 0.2s;
+	}
+
+	.submit-button:hover {
+		color: rgb(230, 230, 230);
+		box-shadow: none;
+		transform: translateY(-1px);
+	}
+
+	/* Extrato Bancário */
+	.statement-card {
+		background: rgba(255, 255, 255, 0.95);
+		padding: 2rem;
+		border-radius: 16px;
+		box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+		backdrop-filter: blur(10px);
+		height: fit-content;
+		max-height: 600px;
+		overflow: hidden;
+		display: flex;
+		flex-direction: column;
+	}
+
+	.statement-card h3 {
+		color: #1f2937;
+		font-size: 1.5rem;
+		margin-bottom: 1.5rem;
+		font-weight: 600;
+	}
+
+	.statement-list {
+		flex: 1;
+		overflow-y: auto;
+		display: flex;
+		flex-direction: column;
+		gap: 1rem;
+	}
+
+	.transaction-item {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		padding: 1rem;
+		background: rgba(249, 250, 251, 0.8);
+		border-radius: 8px;
+		border-left: 4px solid transparent;
+		transition: all 0.2s;
+	}
+
+	.transaction-item:hover {
+		background: rgba(249, 250, 251, 1);
+		transform: translateX(4px);
+	}
+
+	.transaction-item.credit {
+		border-left-color: #16a34a;
+	}
+
+	.transaction-item.debit {
+		border-left-color: #dc2626;
+	}
+
+	.transaction-info {
+		flex: 1;
+	}
+
+	.transaction-description {
+		font-weight: 500;
+		color: #1f2937;
+		margin-bottom: 0.25rem;
+	}
+
+	.transaction-date {
+		font-size: 0.8rem;
+		color: #6b7280;
+	}
+
+	.transaction-amount {
+		font-weight: 600;
+		font-size: 1.1rem;
+	}
+
+	.transaction-amount.credit {
+		color: #16a34a;
+	}
+
+	.transaction-amount.debit {
+		color: #dc2626;
+	}
+
+	/* Logout */
+	.logout-container {
+		position: fixed;
+		top: 2rem;
+		right: 2rem;
+	}
+
+	.logout-link {
+		color: #ef4444;
+		text-decoration: none;
+		font-weight: 500;
+		padding: 0.75rem 1.5rem;
+		background: rgba(255, 255, 255, 0.9);
+		border: 2px solid #ef4444;
+		border-radius: 8px;
+		transition: all 0.2s;
+		backdrop-filter: blur(10px);
+	}
+
+	.logout-link:hover {
+		background: #ef4444;
+		color: white;
+	}
+
+	/* Gráfico de Pizza */
+	.chart-section {
+		margin-top: 2rem;
+		max-width: 1200px;
+		margin-left: auto;
+		margin-right: auto;
+	}
+
+	.chart-card {
+		background: rgba(255, 255, 255, 0.95);
+		padding: 2rem;
+		border-radius: 16px;
+		box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+		backdrop-filter: blur(10px);
+		text-align: center;
+	}
+
+	.chart-card h3 {
+		color: #1f2937;
+		font-size: 1.5rem;
+		margin-bottom: 1.5rem;
+		font-weight: 600;
+	}
+
+	#pieChartContainer {
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		min-height: 400px;
+	}
+
+	.pie-chart-wrapper {
+		width: 100%;
+		max-width: 600px;
+	}
+
+	.chart-summary {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+		gap: 1.5rem;
+		margin-top: 1rem;
+	}
+
+	.chart-item {
+		background: rgba(249, 250, 251, 0.8);
+		padding: 1.5rem;
+		border-radius: 12px;
+		text-align: center;
+		border: 2px solid transparent;
+		transition: all 0.2s;
+	}
+
+	.chart-item:hover {
+		background: rgba(249, 250, 251, 1);
+		transform: translateY(-2px);
+		box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+	}
+
+	.chart-label {
+		display: block;
+		font-size: 0.9rem;
+		font-weight: 500;
+		color: #6b7280;
+		margin-bottom: 0.5rem;
+	}
+
+	.chart-value {
+		display: block;
+		font-size: 1.5rem;
+		font-weight: 700;
+	}
+
+	.chart-value.income {
+		color: #16a34a;
+	}
+
+	.chart-value.expense {
+		color: #dc2626;
+	}
+
+	/* Responsividade */
+	@media (max-width: 1024px) {
+		.main-content {
+			grid-template-columns: 1fr;
+			gap: 1.5rem;
+		}
+	}
+
+	@media (max-width: 768px) {
+		.dashboard-container {
+			padding: 1rem;
+		}
+
+		.balance-card,
+		.form-card,
+		.statement-card,
+		.chart-card {
+			padding: 1.5rem;
+		}
+
+		.balance-amount {
+			font-size: 2rem;
+		}
+
+		.chart-summary {
+			grid-template-columns: 1fr;
+			gap: 1rem;
+		}
+
+		.chart-value {
+			font-size: 1.25rem;
+		}
+
+		.logout-container {
+			position: static;
+			text-align: center;
+			margin-top: 2rem;
+		}
+	}
+</style>

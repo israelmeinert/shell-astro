@@ -1,5 +1,20 @@
 // @ts-check
 import { defineConfig } from 'astro/config';
-
+import moduleFederation from  '@originjs/vite-plugin-federation' //'astro-module-federation';
+import react from '@astrojs/react';
 // https://astro.build/config
-export default defineConfig({});
+export default defineConfig({
+    integrations: [react()],
+    vite: {
+      plugins: [
+        react(),
+        moduleFederation({
+          name: 'host_app',
+          remotes: {
+            remote_app: 'http://localhost:5001/assets/remoteEntry.js'
+          },
+          shared: ['react', 'react-dom']
+        })
+      ],
+    }
+  });
