@@ -11,7 +11,8 @@ export default defineConfig({
         moduleFederation({
           name: 'host_app',
           remotes: {
-            remote_app: 'http://localhost:5001/assets/remoteEntry.js'
+            // remote_app: 'http://localhost:5001/assets/remoteEntry.js'
+            remote_app: 'https://micro-front-fiap.netlify.app/assets/remoteEntry.js'
           },
           shared: ['react', 'react-dom']
         })
