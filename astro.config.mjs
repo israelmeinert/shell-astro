@@ -3,7 +3,9 @@ import { defineConfig } from 'astro/config';
 import moduleFederation from  '@originjs/vite-plugin-federation' //'astro-module-federation';
 import react from '@astrojs/react';
 // https://astro.build/config
+const port = parseInt(process.env.PORT || '4000')
 export default defineConfig({
+    server:{port: port},
     integrations: [react()],
     vite: {
       plugins: [
@@ -17,5 +19,5 @@ export default defineConfig({
           shared: ['react', 'react-dom']
         })
       ],
-    }
+    },
   });
